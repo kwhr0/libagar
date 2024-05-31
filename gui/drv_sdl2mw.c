@@ -525,15 +525,22 @@ SDL2MW_OpenWindow(AG_Window *_Nonnull win, const AG_Rect *_Nonnull r,
 	/* For AG_SDL_GetWindowFromID(). */
 	AGDRIVERMW(drv)->windowID = SDL_GetWindowID(smw->window);
 
+#define FIRST_AID
 	/* Get the preferred pixel format for the window. */
+#ifndef FIRST_AID
 	Swin = SDL_GetWindowSurface(smw->window);
+#endif
 	drv->videoFmt = Malloc(sizeof(AG_PixelFormat));
+#ifdef FIRST_AID
+	AG_PixelFormatRGBA(drv->videoFmt, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+#else
 	AG_PixelFormatRGBA(drv->videoFmt,
 	    Swin->format->BitsPerPixel,
 	    Swin->format->Rmask,
 	    Swin->format->Gmask,
 	    Swin->format->Bmask,
 	    Swin->format->Amask);
+#endif
 
 	if ((smw->glCtx = SDL_GL_CreateContext(smw->window)) == NULL) {
 		AG_SetError("SDL_GL_CreateContext: %s", SDL_GetError());
@@ -542,7 +549,7 @@ SDL2MW_OpenWindow(AG_Window *_Nonnull win, const AG_Rect *_Nonnull r,
 		return (-1);
 	}
 
-#ifdef DEBUG_DISPLAY
+#if defined(DEBUG_DISPLAY) && !defined(FIRST_AID)
 	Debug(smw, "New display (%d x %d x %d bpp)\n",
 	    Swin->w, Swin->h, Swin->format->BitsPerPixel);
 #endif
@@ -554,8 +561,13 @@ SDL2MW_OpenWindow(AG_Window *_Nonnull win, const AG_Rect *_Nonnull r,
 	AG_GL_InitContext(smw, &smw->gl);
 	rVP.x = 0;
 	rVP.y = 0;
+#ifdef FIRST_AID
+	rVP.w = r->w;
+	rVP.h = r->h;
+#else
 	rVP.w = Swin->w;
 	rVP.h = Swin->h;
+#endif
 	AG_GL_SetViewport(&smw->gl, &rVP);
 	
 	AG_InitStockCursors(drv);
